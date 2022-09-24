@@ -91,6 +91,13 @@ SMCApi.SourceGetType = {
     LAST_ALL: 4
 };
 
+SMCApi.SourceFilterType = {
+    POSITION: 0,
+    NUMBER: 1,
+    STRING_EQUAL: 2,
+    STRING_CONTAIN: 3
+};
+
 SMCApi.Map = function () {
     this.keys = [];
     this.data = {};
@@ -695,6 +702,7 @@ SMCApi.CFG.IExecutionContext = {
     }
 
 };
+SMCApi.CFG.IExecutionContext.prototype = SMCApi.CFG.ISourceList;
 
 /**
  * Interface for Managed Execution Context
@@ -702,34 +710,6 @@ SMCApi.CFG.IExecutionContext = {
  * @parent SMCApi.CFG.ISourceList
  */
 SMCApi.CFG.IExecutionContextManaged = {
-
-    /**
-     * get name
-     *
-     *  @return string
-     */
-    getName: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * get max work interval in milliseconds
-     * if -1, no time limit
-     *
-     *  @return number
-     */
-    getMaxWorkInterval: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * is work
-     *
-     *  @return boolean     true if work
-     */
-    isEnable: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
 
     /**
      * change name
@@ -841,84 +821,6 @@ SMCApi.CFG.IExecutionContextManaged = {
      */
     removeManagedConfiguration: function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    }
-
-};
-SMCApi.CFG.IExecutionContextManaged.prototype = SMCApi.CFG.ISourceList;
-
-/**
- * Interface for Source
- */
-SMCApi.CFG.ISource = {
-
-    /**
-     * get type of source.
-     *
-     * @return SMCApi.SourceType
-     */
-    getType: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * get value
-     * depend on type
-     *
-     * @return SMCApi.CFG.IConfiguration for MODULE_CONFIGURATION, IExecutionContext for EXECUTION_CONTEXT, SMCApi.IValue for STATIC_VALUE, null for MULTIPART
-     */
-    getValue: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * get order.
-     * determines the position in the source list.
-     *
-     * @return int
-     */
-    getOrder: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * is source event driven
-     *
-     * @return true if it is true
-     */
-    isEventDriven: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * get source list
-     *
-     * @return SMCApi.CFG.ISourceList for MULTIPART or null
-     */
-    getList: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    }
-
-};
-
-SMCApi.CFG.ISourceList = {
-
-    /**
-     * count sources
-     *
-     * @return int
-     */
-    countSources: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * get source
-     *
-     * @param id    number                              serial number in the list of sources
-     * @return SMCApi.CFG.ISource or null
-     */
-    getSource: function (id) {
-        throw new SMCApi.ModuleException('function not implemented');
     },
 
     /**
@@ -1005,6 +907,288 @@ SMCApi.CFG.ISourceList = {
     }
 
 };
+SMCApi.CFG.IExecutionContextManaged.prototype = SMCApi.CFG.IExecutionContext;
+
+
+/**
+ * Interface for Source filter
+ */
+SMCApi.CFG.ISourceFilter = {
+    /**
+     * get type.
+     *
+     * @return SMCApi.SourceFilterType
+     */
+    getType: function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * count params
+     *
+     * @return number
+     */
+    countParams: function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * get param
+     * params may have any types, depends on the SMCApi.SourceFilterType and id
+     *
+     * @param id    number      serial number in the list of filter params
+     * @return Object depend on type:
+     * POSITION: Array[number] (n*2 elements: from - inclusive and to - exclusive for range or position and null), number (period length, if greater than zero, then defines the set within which the previous list values apply), number (count periods, determines the number of periods), number (start offset, before the first period)
+     * NUMBER: number (min, inclusive), number (max, inclusive)
+     * STRING_EQUAL: boolean (type, if true then need equals, also, not equal), string (value for compare)
+     * STRING_CONTAIN: boolean (type, if true then need contain, also, not contain), string (value)
+     */
+    getParam: function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    }
+};
+
+/**
+ * Interface for Source
+ */
+SMCApi.CFG.ISource = {
+
+    /**
+     * get type of source.
+     *
+     * @return SMCApi.SourceType
+     */
+    getType: function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * count params
+     *
+     * @return int
+     */
+    countParams: function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * get param
+     * params may have any types, depends on the SMCApi.SourceType and id
+     *
+     * @param id    number     serial number in the list of source params
+     * @return Object depend on type:
+     * MODULE_CONFIGURATION: SMCApi.CFG.IConfiguration configuration (source), SMCApi.SourceGetType getType (type of get commands from source), int countLast (only for SMCApi.ContextSourceGetType.LAST. minimum 1), boolean eventDriven (is event driven)
+     * EXECUTION_CONTEXT: SMCApi.CFG.IExecutionContext executionContext (source), SMCApi.SourceGetType getType (type of get commands from source), int countLast (only for SMCApi.ContextSourceGetType.LAST. minimum 1), boolean eventDriven (is event driven)
+     * STATIC_VALUE: IValue (String, Number or byte array)
+     * MULTIPART: null
+     * CALLER_RELATIVE_NAME: string (caller level cfg name)
+     */
+    getParam: function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * count filters
+     *
+     * @return number
+     */
+    countFilters: function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * get filter
+     *
+     * @param id serial number in the list of Filters
+     * @return SMCApi.CFG.ISourceFilter
+     */
+    getFilter: function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    }
+
+};
+
+/**
+ * Interface for Managed Source
+ */
+SMCApi.CFG.ISourceManaged = {
+    /**
+     * Create position filter and bind it to this source
+     * add filter to end of current list (order = max_order + 1)
+     * only for MODULE_CONFIGURATION and EXECUTION_CONTEXT SourceType
+     *
+     * @param range        Array[number]   n*2 elements: from - inclusive and to - exclusive for range or position and null
+     * @param period       number          period length, if greater than zero, then defines the set within which the previous list values apply
+     * @param countPeriods number          determines the number of periods
+     * @param startOffset  number          before the first period
+     * @return SMCApi.CFG.ISourceFilter
+     */
+    createFilterPosition: function (range, period, countPeriods, startOffset) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * Create number filter and bind it to this source
+     * add filter to end of current list (order = max_order + 1)
+     * only for MODULE_CONFIGURATION and EXECUTION_CONTEXT SourceType
+     *
+     * @param min   number  inclusive
+     * @param max   number  inclusive
+     * @return SMCApi.CFG.ISourceFilter
+     */
+    createFilterNumber: function (min, max) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * Create string equal filter and bind it to this source
+     * add filter to end of current list (order = max_order + 1)
+     * only for MODULE_CONFIGURATION and EXECUTION_CONTEXT SourceType
+     *
+     * @param needEquals    boolean     if true then need equals, also, not equal
+     * @param value         string      value for compare
+     * @return SMCApi.CFG.ISourceFilter
+     */
+    createFilterStrEq: function (needEquals, value) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * Create string contain filter and bind it to this source
+     * add filter to end of current list (order = max_order + 1)
+     * only for MODULE_CONFIGURATION and EXECUTION_CONTEXT SourceType
+     *
+     * @param needContain    boolean     if true then need equals, also, not equal
+     * @param value          string      value for compare
+     * @return SMCApi.CFG.ISourceFilter
+     */
+    createFilterStrContain: function (needContain, value) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * remove filter from list
+     *
+     * @param id    number      serial number in the list of filters
+     */
+    removeFilter: function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    }
+
+};
+SMCApi.CFG.ISourceManaged.prototype = SMCApi.CFG.ISource;
+
+
+SMCApi.CFG.ISourceList = {
+
+    /**
+     * count sources
+     *
+     * @return int
+     */
+    countSource: function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * get source
+     *
+     * @param id    number                              serial number in the list of sources
+     * @return SMCApi.CFG.ISource or null
+     */
+    getSource: function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    }
+
+};
+
+SMCApi.CFG.ISourceListManaged = {
+
+    /**
+     * create source and bind it to this execution context
+     * add source to end of current list (order = max_order + 1)
+     * created ContextSourceType is MODULE_CONFIGURATION
+     *
+     * @param configuration SMCApi.CFG.IConfiguration   configuration source.
+     * @param getType   SMCApi.SourceGetType            type of get commands from source.  default NEW.
+     * @param countLast number                          only for ContextSourceGetType.LAST. minimum 1. default 1.
+     * @param eventDriven   boolean                     if true, then source is event driven. default is false.
+     * @return SMCApi.CFG.ISourceManaged
+     */
+    createSourceConfiguration: function (configuration, getType, countLast, eventDriven) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * create source and bind it to this execution context
+     * add source to end of current list (order = max_order + 1)
+     * created ContextSourceType is EXECUTION_CONTEXT
+     *
+     * @param executionContext SMCApi.CFG.IExecutionContext    execution context source.
+     * @param getType   SMCApi.SourceGetType            type of get commands from source.
+     * @param countLast number                          only for ContextSourceGetType.LAST. minimum 1. default 1.
+     * @param eventDriven   boolean                     if true, then source is event driven. default is false.
+     * @return SMCApi.CFG.ISourceManaged
+     */
+    createSourceExecutionContext: function (executionContext, getType, countLast, eventDriven) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * create source and bind it to this execution context
+     * add source to end of current list (order = max_order + 1)
+     * created ContextSourceType is STATIC_VALUE
+     *
+     * @param value SMCApi.IValue                       value (String, Number or byte array)
+     * @return SMCApi.CFG.ISourceManaged
+     */
+    createSourceValue: function (value) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * create source and bind it to this execution context
+     * add source to end of list (order = max_order + 1)
+     * created ContextSourceType is MULTIPART
+     *
+     *  @return SMCApi.CFG.ISourceManaged
+     */
+    createSource: function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * remove source from list
+     *
+     * @param id    number                              serial number in the list of sources
+     * @return void
+     */
+    removeSource: function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * get managed source list
+     *
+     * @param id serial number in the list of sources
+     * @return SMCApi.CFG.ISourceListManaged or null
+     */
+    getSourceListManaged: function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    },
+
+    /**
+     * get managed source
+     *
+     * @param id serial number in the list of sources
+     * @return SMCApi.CFG.ISourceManaged or null
+     */
+    getSourceManaged: function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    }
+
+};
+SMCApi.CFG.ISourceListManaged.prototype = SMCApi.CFG.ISourceList;
 
 /**
  * tool for work with unmodifiable files
@@ -1237,15 +1421,6 @@ SMCApi.ExecutionContextTool = {
      *  @return void
      */
     addError: function (value) {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * get count sources
-     *
-     *  @return number
-     */
-    countSource: function () {
         throw new SMCApi.ModuleException('function not implemented');
     },
 
