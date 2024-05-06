@@ -106,25 +106,25 @@ SMCApi.SourceFilterType = {
 /**
  * Interface for value objects
  */
-SMCApi.IValue = {
+SMCApi.IValue = function () {
 
     /**
      * value type
      *
      * @return SMCApi.ValueType
      */
-    getType: function () {
+    this.getType = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * value as object
      *
-     * @return Object
+     * @return {number|string|Array|boolean|SMCApi.ObjectArray}
      */
-    getValue: function () {
+    this.getValue = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
 
 };
 
@@ -132,76 +132,78 @@ SMCApi.IValue = {
  * Interface for Message
  * @parent SMCApi.IValue
  */
-SMCApi.IMessage = {
+SMCApi.IMessage = function () {
+
+    SMCApi.IValue.call(this);
 
     /**
      * get date of creation
      *
      *  @return Date
      */
-    getDate: function () {
+    this.getDate = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get message type for process messages - DATA
      *
      *  @return SMCApi.MessageType
      */
-    getMessageType: function () {
+    this.getMessageType = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
 
 };
-SMCApi.IMessage.prototype = SMCApi.IValue;
+SMCApi.IMessage.prototype = Object.create(SMCApi.IValue);
 
 /**
  * Interface for Action
  */
-SMCApi.IAction = {
+SMCApi.IAction = function () {
 
     /**
      * get messages
      *
-     *  @return Array[SMCApi.IMessage]
+     *  @return SMCApi.IMessage[]
      */
-    getMessages: function () {
+    this.getMessages = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get type
      *
      *  @return SMCApi.ActionType
      */
-    getType: function () {
+    this.getType = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
 
 };
 
 /**
  * Interface for Command
  */
-SMCApi.ICommand = {
+SMCApi.ICommand = function () {
 
     /**
      * get actions
      *
      *  @return SMCApi.IAction[]
      */
-    getActions: function () {
+    this.getActions = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get type
      *
      *  @return SMCApi.CommandType
      */
-    getType: function () {
+    this.getType = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
 
 };
 
@@ -225,62 +227,84 @@ SMCApi.ObjectType = {
 /**
  * ObjectField
  * @param name {string}                                   name
- * @param value object                                  value
- * @param type {SMCApi.ObjectType}                        type
+ * @param {object} [value]                                  value
+ * @param {SMCApi.ObjectType}  [type]                       type
  * @constructor
  */
 SMCApi.ObjectField = function (name, value, type) {
+    const callSetValue = typeof value !== undefined && value !== null && (typeof type === undefined || type === null);
     this.name = name;
-    this.value = value;
+    this.value = typeof value !== undefined ? value : null;
+    /** @type {SMCApi.ObjectType} */
     this.type = type;
     const that = this;
 
-    if (value && typeof type === undefined)
+    if (callSetValue)
         this.setValue(value)
 
-    this.setValue = function (value) {
+    /**
+     *
+     * @param {object} [value]
+     * @param {SMCApi.ObjectType}  [type]
+     */
+    this.setValue = function (value, type) {
         this.value = value
 
-        let valueType = undefined;
-        if (typeof value !== undefined) {
-            if (value instanceof SMCApi.ObjectArray) {
-                valueType = SMCApi.ObjectType.OBJECT_ARRAY;
-            } else if (value instanceof SMCApi.ObjectElement) {
-                valueType = SMCApi.ObjectType.OBJECT_ELEMENT;
-            } else if (value instanceof SMCApi.ObjectField) {
-                this.type = value.getType()
-                this.value = value.getValue()
-            } else if (value instanceof SMCApi.IValue) {
-                this.type = SMCApi.ObjectType[value.getType()]
-                this.value = value.getValue()
-            } else if (Object.prototype.toString.call(value) === "[object String]") {
+        if (typeof type === undefined || type === null) {
+            let valueType = undefined;
+            if (typeof value !== undefined && value !== null) {
+                if (value instanceof SMCApi.ObjectArray) {
+                    valueType = SMCApi.ObjectType.OBJECT_ARRAY;
+                } else if (value instanceof SMCApi.ObjectElement) {
+                    valueType = SMCApi.ObjectType.OBJECT_ELEMENT;
+                } else if (value instanceof SMCApi.ObjectField) {
+                    this.type = value.getType()
+                    this.value = value.getValue()
+                } else if (value instanceof SMCApi.IValue) {
+                    this.type = SMCApi.ObjectType[value.getType()]
+                    this.value = value.getValue()
+                } else if (Object.prototype.toString.call(value) === "[object String]") {
+                    valueType = SMCApi.ObjectType.STRING;
+                } else if (Array.isArray(value)) {
+                    valueType = SMCApi.ObjectType.BYTES;
+                } else if (value === false || value === true) {
+                    valueType = SMCApi.ObjectType.BOOLEAN;
+                } else if (!Number.isInteger(value) && Number.isFinite(value)) {
+                    valueType = SMCApi.ObjectType.DOUBLE;
+                } else if (Number.isInteger(value)) {
+                    valueType = SMCApi.ObjectType.LONG;
+                } else {
+                    valueType = SMCApi.ObjectType.DOUBLE;
+                    this.value = value.doubleValue ? value.doubleValue() : 0
+                }
+            }
+            if (valueType === undefined)
                 valueType = SMCApi.ObjectType.STRING;
-            } else if (Array.isArray(value)) {
-                valueType = SMCApi.ObjectType.BYTES;
-            } else if (value === false || value === true) {
-                valueType = SMCApi.ObjectType.BOOLEAN;
-            } else if (Number.isInteger(value)) {
-                valueType = SMCApi.ObjectType.LONG;
-            } else if (!Number.isInteger(value) && Number.isFinite(value)) {
-                valueType = SMCApi.ObjectType.DOUBLE;
-            } else {
-                valueType = SMCApi.ObjectType.DOUBLE;
-                this.value = value.doubleValue ? value.doubleValue() : 0
+            this.type = valueType;
+        } else {
+            this.type = type;
+            if (typeof value !== undefined && value !== null) {
+                if (value instanceof SMCApi.ObjectField) {
+                    this.type = value.getType()
+                    this.value = value.getValue()
+                } else if (value instanceof SMCApi.IValue) {
+                    this.type = SMCApi.ObjectType[value.getType()]
+                    this.value = value.getValue()
+                }
             }
         }
-        if (valueType === undefined)
-            valueType = SMCApi.ObjectType.STRING;
-        this.type = valueType;
     }
-    /**
-     * @returns {string}
-     */
+
     this.getName = function () {
         return this.name
     }
     this.getType = function () {
         return this.type
     }
+    /**
+     *
+     * @return {number|string|Array|boolean|SMCApi.ObjectArray|SMCApi.ObjectElement}
+     */
     this.getValue = function () {
         return this.value
     }
@@ -294,23 +318,24 @@ SMCApi.ObjectField = function (name, value, type) {
 
 /**
  * ObjectElement
- * @param fields {SMCApi.ObjectField[]}                          fields
+ * @param {SMCApi.ObjectField[]} [fields]                          fields
  * @constructor
  */
 SMCApi.ObjectElement = function (fields) {
+    /** @type {SMCApi.ObjectField[]}*/
     this.fields = typeof fields !== undefined && Array.isArray(fields) ? fields.slice() /*Array.copyOf(fields, fields.length)*/ /*fields.clone()*/ : [];
     const that = this;
     this.getFields = function () {
-        return this.getFields;
+        return this.fields;
     }
     this.findField = function (name) {
-        return fields.find(v => v.name === name);
+        return this.fields.find(v => v.name === name);
     }
     this.findFieldIgnoreCase = function (name) {
-        return fields.find(v => v.name.toUpperCase() === name.toUpperCase());
+        return this.fields.find(v => v.name.toUpperCase() === name.toUpperCase());
     }
     this.isSimple = function () {
-        return !fields.some(v => !v.isSimple());
+        return !this.fields.some(v => !v.isSimple());
     }
     SMCApi.ObjectElement.prototype.toString = function () {
         return `{count=${that.fields.length}, fields=${that.fields}`;
@@ -319,11 +344,12 @@ SMCApi.ObjectElement = function (fields) {
 
 /**
  * ObjectArray
- * @param typev {SMCApi.ObjectType}                       type
- * @param objects {object[]}                         objects
+ * @param {SMCApi.ObjectType} [typev]                        type
+ * @param {object[]}  [objects]                       objects
  * @constructor
  */
 SMCApi.ObjectArray = function (typev, objects) {
+    typev = typev || SMCApi.ObjectType.OBJECT_ELEMENT;
     this.type = typev
     this.objects = []
     if (typeof objects !== undefined && Array.isArray(objects)) {
@@ -332,8 +358,13 @@ SMCApi.ObjectArray = function (typev, objects) {
     }
     const that = this;
 
+    /**
+     *
+     * @param value
+     * @param {SMCApi.ObjectType} [valueType]
+     */
     this.check = function (value, valueType) {
-        if (typeof objects === undefined)
+        if (typeof this.objects === undefined)
             throw new SMCApi.ModuleException('obj is None');
         if (typeof valueType === undefined)
             throw new SMCApi.ModuleException('obj is None');
@@ -411,34 +442,34 @@ SMCApi.CFG = {};
 /**
  * Interface for Module
  */
-SMCApi.CFG.IModule = {
+SMCApi.CFG.IModule = function () {
 
     /**
      * get name
      *
      *  @return string
      */
-    getName: function () {
+    this.getName = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get count types
      *
      *  @return number
      */
-    countTypes: function () {
+    this.countTypes = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get type name
      *  @param typeId number                    serial number in the list of types
      *  @return string
      */
-    getTypeName: function (typeId) {
+    this.getTypeName = function (typeId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get minimum count sources
@@ -446,9 +477,9 @@ SMCApi.CFG.IModule = {
      * @param typeId number                    serial number in the list of types
      *  @return number
      */
-    getMinCountSources: function (typeId) {
+    this.getMinCountSources = function (typeId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get maximum count sources
@@ -456,9 +487,9 @@ SMCApi.CFG.IModule = {
      * @param typeId {number}                    serial number in the list of types
      *  @return number
      */
-    getMaxCountSources: function (typeId) {
+    this.getMaxCountSources = function (typeId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get minimum count execution contexts
@@ -466,9 +497,9 @@ SMCApi.CFG.IModule = {
      * @param typeId {number}                    serial number in the list of types
      *  @return number
      */
-    getMinCountExecutionContexts: function (typeId) {
+    this.getMinCountExecutionContexts = function (typeId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get maximum count execution contexts
@@ -476,9 +507,9 @@ SMCApi.CFG.IModule = {
      * @param typeId {number}                    serial number in the list of types
      *  @return number
      */
-    getMaxCountExecutionContexts: function (typeId) {
+    this.getMaxCountExecutionContexts = function (typeId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get minimum count managed configurations
@@ -486,9 +517,9 @@ SMCApi.CFG.IModule = {
      * @param typeId {number}                    serial number in the list of types
      *  @return number
      */
-    getMinCountManagedConfigurations: function (typeId) {
+    this.getMinCountManagedConfigurations = function (typeId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get maximum count managed configurations
@@ -496,34 +527,34 @@ SMCApi.CFG.IModule = {
      * @param typeId {number}                    serial number in the list of types
      *  @return number
      */
-    getMaxCountManagedConfigurations: function (typeId) {
+    this.getMaxCountManagedConfigurations = function (typeId) {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
 
 };
 
 /**
  * Interface for Container
  */
-SMCApi.CFG.IContainer = {
+SMCApi.CFG.IContainer = function () {
 
     /**
      * get name
      *
      *  @return string
      */
-    getName: function () {
+    this.getName = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * is configuration work
      *
      *  @return boolean
      */
-    isEnable: function () {
+    this.isEnable = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
 
 };
 
@@ -532,16 +563,18 @@ SMCApi.CFG.IContainer = {
  *
  * @parent SMCApi.CFG.IContainer
  */
-SMCApi.CFG.IContainerManaged = {
+SMCApi.CFG.IContainerManaged = function () {
+
+    SMCApi.CFG.IContainer.call(this);
 
     /**
      * count child configurations
      *
      *  @return number
      */
-    countConfigurations: function () {
+    this.countConfigurations = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get child configuration
@@ -549,18 +582,18 @@ SMCApi.CFG.IContainerManaged = {
      *  @param id   number                              serial number in the list of child configurations
      *  @return SMCApi.CFG.IConfiguration or null
      */
-    getConfiguration: function (id) {
+    this.getConfiguration = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count child managed configurations
      *
      *  @return number
      */
-    countManagedConfigurations: function () {
+    this.countManagedConfigurations = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get child managed configuration
@@ -568,18 +601,18 @@ SMCApi.CFG.IContainerManaged = {
      *  @param id   {number}                              serial number in the list of child managed configurations
      *  @return SMCApi.CFG.IConfigurationManaged or null
      */
-    getManagedConfiguration: function (id) {
+    this.getManagedConfiguration = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count child containers
      *
      *  @return number
      */
-    countContainers: function () {
+    this.countContainers = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get child container
@@ -587,9 +620,9 @@ SMCApi.CFG.IContainerManaged = {
      *  @param id   {number}                              serial number in the list of child containers
      *  @return SMCApi.CFG.IConfiguration or null
      */
-    getContainer: function (id) {
+    this.getContainer = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * create child container
@@ -597,9 +630,9 @@ SMCApi.CFG.IContainerManaged = {
      *  @param name {string}                              unique name for container
      *  @return SMCApi.CFG.IContainerManaged
      */
-    createContainer: function (name) {
+    this.createContainer = function (name) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * delete empty child container
@@ -607,116 +640,116 @@ SMCApi.CFG.IContainerManaged = {
      *  @param id   {number}                              serial number in the list of child containers
      *  @return void
      */
-    removeContainer: function (id) {
+    this.removeContainer = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
 };
-SMCApi.CFG.IContainerManaged.prototype = SMCApi.CFG.IContainer;
+SMCApi.CFG.IContainerManaged.prototype = Object.create(SMCApi.CFG.IContainer);
 
 
 /**
  * Interface for Module Configuration
  */
-SMCApi.CFG.IConfiguration = {
+SMCApi.CFG.IConfiguration = function () {
 
     /**
      * get module
      *  @return SMCApi.CFG.IModule
      */
-    getModule: function () {
+    this.getModule = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get name
      *
      *  @return string
      */
-    getName: function () {
+    this.getName = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get description
      *
      *  @return string
      */
-    getDescription: function () {
+    this.getDescription = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get all settings
      *
      *  @return {Map<string, SMCApi.IValue>}
      */
-    getAllSettings: function () {
+    this.getAllSettings = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get setting value
      *
      *  @param key  {string}                              setting name
-     *  @return {SMCApi.IValue|null}
+     *  @return {SMCApi.IValue} or null
      */
-    getSetting: function (key) {
+    this.getSetting = function (key) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get all variables
      *
      *  @return Map[string, SMCApi.IValue]
      */
-    getAllVariables: function () {
+    this.getAllVariables = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get variable value
      *
      *  @param key  {string}                              variable name
-     *  @return {SMCApi.IValue|null}
+     *  @return {SMCApi.IValue} or null
      */
-    getVariable: function (key) {
+    this.getVariable = function (key) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get buffer size
      *
      *  @return number
      */
-    getBufferSize: function () {
+    this.getBufferSize = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get thread buffer size
      *
      * @return int
      */
-    getThreadBufferSize: function () {
+    this.getThreadBufferSize = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * is configuration work
      *
      *  @return boolean
      */
-    isEnable: function () {
+    this.isEnable = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * check is configuration work now (process execute any commands)
      *
      * @return boolean
      */
-    isActive: function () {
+    this.isActive = function () {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
@@ -727,7 +760,9 @@ SMCApi.CFG.IConfiguration = {
  *
  * @parent SMCApi.CFG.IConfiguration
  */
-SMCApi.CFG.IConfigurationManaged = {
+SMCApi.CFG.IConfigurationManaged = function () {
+
+    SMCApi.CFG.IConfiguration.call(this);
 
     /**
      * change name
@@ -735,9 +770,9 @@ SMCApi.CFG.IConfigurationManaged = {
      *  @param name {string}                              unique name for container
      *  @return void
      */
-    setName: function (name) {
+    this.setName = function (name) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * change setting
@@ -746,9 +781,9 @@ SMCApi.CFG.IConfigurationManaged = {
      *  @param value    {Object}                          value object (string, number, bytes)
      *  @return void
      */
-    setSetting: function (key, value) {
+    this.setSetting = function (key, value) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * change variable
@@ -757,9 +792,9 @@ SMCApi.CFG.IConfigurationManaged = {
      *  @param value  {Object}                           value object (string, number, bytes)
      *  @return void
      */
-    setVariable: function (key, value) {
+    this.setVariable = function (key, value) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * remove variable
@@ -767,9 +802,9 @@ SMCApi.CFG.IConfigurationManaged = {
      *  @param key  {string}                             variable name
      *  @return void
      */
-    removeVariable: function (key) {
+    this.removeVariable = function (key) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * change buffer size
@@ -777,18 +812,18 @@ SMCApi.CFG.IConfigurationManaged = {
      *  @param bufferSize   {number}                      1 is minimum
      *  @return void
      */
-    setBufferSize: function (bufferSize) {
+    this.setBufferSize = function (bufferSize) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * change thread buffer size
      *
      * @param threadBufferSize {number} 1 is minimum
      */
-    setThreadBufferSize: function (threadBufferSize) {
+    this.setThreadBufferSize = function (threadBufferSize) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * enable or disable configuration
@@ -796,40 +831,40 @@ SMCApi.CFG.IConfigurationManaged = {
      *  @param enable   {boolean}                         true for enable
      *  @return void
      */
-    setEnable: function (enable) {
+    this.setEnable = function (enable) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count execution contexts
      *
      *  @return number
      */
-    countExecutionContexts: function () {
+    this.countExecutionContexts = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get execution context
      *
      *  @param id   {number}                              serial number in the list of Execution Contexts
-     *  @return {SMCApi.CFG.IExecutionContextManaged|null}
+     *  @return {SMCApi.CFG.IExecutionContextManaged} or null
      */
-    getExecutionContext: function (id) {
+    this.getExecutionContext = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * create execution context and bind it to this configuration
      *
      *  @param name {string}                              unique name for configuration
      *  @param type {string}                              type
-     *  @param maxWorkInterval  {number}                  max work interval. if -1, no time limit. in milliseconds. default is -1
+     *  @param {number} [maxWorkInterval]                 max work interval. if -1, no time limit. in milliseconds. default is -1
      *  @return {SMCApi.CFG.IExecutionContextManaged}
      */
-    createExecutionContext: function (name, type, maxWorkInterval) {
+    this.createExecutionContext = function (name, type, maxWorkInterval) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * update execution context in list
@@ -840,9 +875,9 @@ SMCApi.CFG.IConfigurationManaged = {
      * @param maxWorkInterval {number}      max work interval. if -1, no time limit. in milliseconds
      * @return SMCApi.CFG.IExecutionContextManaged
      */
-    updateExecutionContext: function (id, name, type, maxWorkInterval) {
+    this.updateExecutionContext = function (id, name, type, maxWorkInterval) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * delete execution context
@@ -850,44 +885,69 @@ SMCApi.CFG.IConfigurationManaged = {
      *  @param id   {number}                              serial number in the list of Execution Contexts
      *  @return void
      */
-    removeExecutionContext: function (id) {
+    this.removeExecutionContext = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get container
      *
-     *  @return {SMCApi.CFG.IContainerManaged|null}
+     *  @return {SMCApi.CFG.IContainerManaged} or null
      */
-    getContainer: function () {
+    this.getContainer = function () {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
 };
-SMCApi.CFG.IConfigurationManaged.prototype = SMCApi.CFG.IConfiguration;
+SMCApi.CFG.IConfigurationManaged.prototype = Object.create(SMCApi.CFG.IConfiguration);
+
+SMCApi.CFG.ISourceList = function () {
+
+    /**
+     * count sources
+     *
+     * @return int
+     */
+    this.countSource = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get source
+     *
+     * @param id    {number}                              serial number in the list of sources
+     * @return {SMCApi.CFG.ISource} or null
+     */
+    this.getSource = function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    }
+
+};
 
 /**
  * Interface for Execution Context
  */
-SMCApi.CFG.IExecutionContext = {
+SMCApi.CFG.IExecutionContext = function () {
+
+    SMCApi.CFG.ISourceList.call(this);
 
     /**
      * get configuration
      *
      * @return SMCApi.CFG.IConfiguration
      */
-    getConfiguration: function () {
+    this.getConfiguration = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get name
      *
      *  @return {string}
      */
-    getName: function () {
+    this.getName = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get max work interval in milliseconds
@@ -895,27 +955,27 @@ SMCApi.CFG.IExecutionContext = {
      *
      *  @return number
      */
-    getMaxWorkInterval: function () {
+    this.getMaxWorkInterval = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * is work
      *
      *  @return {boolean}     true if work
      */
-    isEnable: function () {
+    this.isEnable = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * check is context work now (execute any command)
      *
      * @return boolean
      */
-    isActive: function () {
+    this.isActive = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get type
@@ -923,19 +983,22 @@ SMCApi.CFG.IExecutionContext = {
      *
      * @return {string}     type or empty for default/any type
      */
-    getType: function () {
+    this.getType = function () {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
 };
-SMCApi.CFG.IExecutionContext.prototype = SMCApi.CFG.ISourceList;
+SMCApi.CFG.IExecutionContext.prototype = Object.create(SMCApi.CFG.ISourceList);
 
 /**
  * Interface for Managed Execution Context
  *
- * @parent SMCApi.CFG.ISourceList
+ * @parent SMCApi.CFG.IExecutionContext
  */
-SMCApi.CFG.IExecutionContextManaged = {
+SMCApi.CFG.IExecutionContextManaged = function () {
+
+    SMCApi.CFG.IExecutionContext.call(this);
+    SMCApi.CFG.ISourceListManaged.call(this);
 
     /**
      * change name
@@ -943,9 +1006,9 @@ SMCApi.CFG.IExecutionContextManaged = {
      *  @param name {string}                              unique name for configuration
      *  @return void
      */
-    setName: function (name) {
+    this.setName = function (name) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * change max work interval
@@ -953,9 +1016,9 @@ SMCApi.CFG.IExecutionContextManaged = {
      *  @param maxWorkInterval  {number}                  if -1, no time limit. in milliseconds
      *  @return void
      */
-    setMaxWorkInterval: function (maxWorkInterval) {
+    this.setMaxWorkInterval = function (maxWorkInterval) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * enable or disable
@@ -963,28 +1026,28 @@ SMCApi.CFG.IExecutionContextManaged = {
      *  @param enable   {boolean}                         true for enable
      *  @return void
      */
-    setEnable: function (enable) {
+    this.setEnable = function (enable) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count execution contexts
      *
      *  @return number
      */
-    countExecutionContexts: function () {
+    this.countExecutionContexts = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get execution context
      *
      *  @param id  {number}                               serial number in the list of Execution Contexts
-     *  @return {SMCApi.CFG.IExecutionContext|null}
+     *  @return {SMCApi.CFG.IExecutionContext} or null
      */
-    getExecutionContext: function (id) {
+    this.getExecutionContext = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * insert execution context in list
@@ -994,9 +1057,9 @@ SMCApi.CFG.IExecutionContextManaged = {
      *  @param executionContext {SMCApi.CFG.IExecutionContext}    execution context
      *  @return void
      */
-    insertExecutionContext: function (id, executionContext) {
+    this.insertExecutionContext = function (id, executionContext) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * update execution context in list
@@ -1004,9 +1067,9 @@ SMCApi.CFG.IExecutionContextManaged = {
      * @param id    {number}                                    serial number in the list of Execution Contexts
      * @param executionContext {SMCApi.CFG.IExecutionContext}
      */
-    updateExecutionContext: function (id, executionContext) {
+    this.updateExecutionContext = function (id, executionContext) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * remove execution context from list
@@ -1014,28 +1077,28 @@ SMCApi.CFG.IExecutionContextManaged = {
      *  @param id   {number}                              serial number in the list of Execution Contexts
      *  @return void
      */
-    removeExecutionContext: function (id) {
+    this.removeExecutionContext = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count managed configurations
      *
      *  @return number
      */
-    countManagedConfigurations: function () {
+    this.countManagedConfigurations = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get managed configuration
      *
      *  @param id   {number}                              serial number in the list of Managed configurations
-     *  @return {SMCApi.CFG.IConfiguration|null}
+     *  @return {SMCApi.CFG.IConfiguration} or null
      */
-    getManagedConfiguration: function (id) {
+    this.getManagedConfiguration = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * insert configuration in list
@@ -1045,9 +1108,9 @@ SMCApi.CFG.IExecutionContextManaged = {
      *  @param configuration    {SMCApi.CFG.IConfiguration}     configuration
      *  @return void
      */
-    insertManagedConfiguration: function (id, configuration) {
+    this.insertManagedConfiguration = function (id, configuration) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * update configuration in list
@@ -1055,9 +1118,9 @@ SMCApi.CFG.IExecutionContextManaged = {
      * @param id    {number}            serial number in the list of Managed configurations
      * @param configuration {SMCApi.CFG.IConfiguration}
      */
-    updateManagedConfiguration: function (id, configuration) {
+    this.updateManagedConfiguration = function (id, configuration) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * remove configuration from list
@@ -1065,44 +1128,44 @@ SMCApi.CFG.IExecutionContextManaged = {
      *  @param id   {number}                              serial number in the list of Managed configurations
      *  @return void
      */
-    removeManagedConfiguration: function (id) {
+    this.removeManagedConfiguration = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * change type
      *
      * @param {string}      type type name or empty for default/any type (if exist)
      */
-    setType: function (type) {
+    this.setType = function (type) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
 };
-SMCApi.CFG.IExecutionContextManaged.prototype = SMCApi.CFG.IExecutionContext;
+SMCApi.CFG.IExecutionContextManaged.prototype = Object.create(SMCApi.CFG.IExecutionContext);
 
 
 /**
  * Interface for Source filter
  */
-SMCApi.CFG.ISourceFilter = {
+SMCApi.CFG.ISourceFilter = function () {
     /**
      * get type.
      *
      * @return SMCApi.SourceFilterType
      */
-    getType: function () {
+    this.getType = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count params
      *
      * @return number
      */
-    countParams: function () {
+    this.countParams = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get param
@@ -1115,7 +1178,7 @@ SMCApi.CFG.ISourceFilter = {
      *          STRING_EQUAL: {boolean} (type, if true then need equals, also, not equal), string (value for compare)
      *          STRING_CONTAIN: {boolean} (type, if true then need contain, also, not contain), string (value)
      */
-    getParam: function (id) {
+    this.getParam = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 };
@@ -1123,25 +1186,25 @@ SMCApi.CFG.ISourceFilter = {
 /**
  * Interface for Source
  */
-SMCApi.CFG.ISource = {
+SMCApi.CFG.ISource = function () {
 
     /**
      * get type of source.
      *
      * @return SMCApi.SourceType
      */
-    getType: function () {
+    this.getType = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count params
      *
      * @return int
      */
-    countParams: function () {
+    this.countParams = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get param
@@ -1155,18 +1218,18 @@ SMCApi.CFG.ISource = {
      * MULTIPART: null
      * CALLER_RELATIVE_NAME: string (caller level cfg name)
      */
-    getParam: function (id) {
+    this.getParam = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count filters
      *
      * @return number
      */
-    countFilters: function () {
+    this.countFilters = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get filter
@@ -1174,7 +1237,7 @@ SMCApi.CFG.ISource = {
      * @param id {number}             serial number in the list of Filters
      * @return SMCApi.CFG.ISourceFilter
      */
-    getFilter: function (id) {
+    this.getFilter = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
@@ -1183,7 +1246,10 @@ SMCApi.CFG.ISource = {
 /**
  * Interface for Managed Source
  */
-SMCApi.CFG.ISourceManaged = {
+SMCApi.CFG.ISourceManaged = function () {
+
+    SMCApi.CFG.ISource.call(this);
+
     /**
      * Create position filter and bind it to this source
      * add filter to end of current list (order = max_order + 1)
@@ -1193,12 +1259,12 @@ SMCApi.CFG.ISourceManaged = {
      * @param period       {number}          period length, if greater than zero, then defines the set within which the previous list values apply
      * @param countPeriods {number}          determines the number of periods
      * @param startOffset  {number}          before the first period
-     * @param forObject    {boolean}         if true - used for ObjectArrays, overwise for all values
+     * @param {boolean} [forObject]          if true - used for ObjectArrays, overwise for all values
      * @return SMCApi.CFG.ISourceFilter
      */
-    createFilterPosition: function (range, period, countPeriods, startOffset, forObject) {
+    this.createFilterPosition = function (range, period, countPeriods, startOffset, forObject) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Create number filter and bind it to this source
@@ -1210,9 +1276,9 @@ SMCApi.CFG.ISourceManaged = {
      * @param fieldName   {string}        field name in ObjectArray. if empty used for simple values, overwise for ObjectArrays.
      * @return SMCApi.CFG.ISourceFilter
      */
-    createFilterNumber: function (min, max, fieldName) {
+    this.createFilterNumber = function (min, max, fieldName) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Create string equal filter and bind it to this source
@@ -1224,9 +1290,9 @@ SMCApi.CFG.ISourceManaged = {
      * @param fieldName   {string}        field name in ObjectArray. if empty used for simple values, overwise for ObjectArrays.
      * @return SMCApi.CFG.ISourceFilter
      */
-    createFilterStrEq: function (needEquals, value, fieldName) {
+    this.createFilterStrEq = function (needEquals, value, fieldName) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Create string contain filter and bind it to this source
@@ -1238,9 +1304,9 @@ SMCApi.CFG.ISourceManaged = {
      * @param fieldName   {string}         field name in ObjectArray. if empty used for simple values, overwise for ObjectArrays.
      * @return SMCApi.CFG.ISourceFilter
      */
-    createFilterStrContain: function (needContain, value, fieldName) {
+    this.createFilterStrContain = function (needContain, value, fieldName) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Create string contain filter and bind it to this source
@@ -1250,9 +1316,9 @@ SMCApi.CFG.ISourceManaged = {
      * @param paths          {string}      object array paths. path - dot separated names.
      * @return SMCApi.CFG.ISourceFilter
      */
-    createFilterObjectPaths: function (paths) {
+    this.createFilterObjectPaths = function (paths) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update Position filter in list
@@ -1263,12 +1329,12 @@ SMCApi.CFG.ISourceManaged = {
      * @param period       {number}          period length, if greater than zero, then defines the set within which the previous list values apply
      * @param countPeriods {number}          determines the number of periods
      * @param startOffset  {number}          before the first period
-     * @param forObject    {boolean}         if true - used for ObjectArrays, overwise for all values
+     * @param {boolean} [forObject]          if true - used for ObjectArrays, overwise for all values
      * @return SMCApi.CFG.ISourceFilter
      */
-    updateFilterPosition: function (id, range, period, countPeriods, startOffset, forObject) {
+    this.updateFilterPosition = function (id, range, period, countPeriods, startOffset, forObject) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update Number filter in list
@@ -1280,9 +1346,9 @@ SMCApi.CFG.ISourceManaged = {
      * @param fieldName     {string}           field name in ObjectArray. if empty used for simple values, overwise for ObjectArrays.
      * @return SMCApi.CFG.ISourceFilter
      */
-    updateFilterNumber: function (id, min, max, fieldName) {
+    this.updateFilterNumber = function (id, min, max, fieldName) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update Str Eq filter in list
@@ -1294,9 +1360,9 @@ SMCApi.CFG.ISourceManaged = {
      * @param fieldName     {string}          field name in ObjectArray. if empty used for simple values, overwise for ObjectArrays.
      * @return SMCApi.CFG.ISourceFilter
      */
-    updateFilterStrEq: function (id, needEquals, value, fieldName) {
+    this.updateFilterStrEq = function (id, needEquals, value, fieldName) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update Str Contain filter in list
@@ -1308,9 +1374,9 @@ SMCApi.CFG.ISourceManaged = {
      * @param fieldName         {string}          field name in ObjectArray. if empty used for simple values, overwise for ObjectArrays.
      * @return SMCApi.CFG.ISourceFilter
      */
-    updateFilterStrContain: function (id, needContain, value, fieldName) {
+    this.updateFilterStrContain = function (id, needContain, value, fieldName) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update Object Paths filter in list
@@ -1320,47 +1386,27 @@ SMCApi.CFG.ISourceManaged = {
      * @param paths             {string}          object array paths. path - dot separated names.
      * @return SMCApi.CFG.ISourceFilter
      */
-    updateFilterObjectPaths: function (id, paths) {
+    this.updateFilterObjectPaths = function (id, paths) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * remove filter from list
      *
      * @param id    {number}      serial number in the list of filters
+     * @return void
      */
-    removeFilter: function (id) {
+    this.removeFilter = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
 };
-SMCApi.CFG.ISourceManaged.prototype = SMCApi.CFG.ISource;
+SMCApi.CFG.ISourceManaged.prototype = Object.create(SMCApi.CFG.ISource);
 
 
-SMCApi.CFG.ISourceList = {
+SMCApi.CFG.ISourceListManaged = function () {
 
-    /**
-     * count sources
-     *
-     * @return int
-     */
-    countSource: function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    },
-
-    /**
-     * get source
-     *
-     * @param id    {number}                              serial number in the list of sources
-     * @return {SMCApi.CFG.ISource|null}
-     */
-    getSource: function (id) {
-        throw new SMCApi.ModuleException('function not implemented');
-    }
-
-};
-
-SMCApi.CFG.ISourceListManaged = {
+    SMCApi.CFG.ISourceList.call(this);
 
     /**
      * create source and bind it to this execution context
@@ -1368,14 +1414,14 @@ SMCApi.CFG.ISourceListManaged = {
      * created ContextSourceType is MODULE_CONFIGURATION
      *
      * @param configuration {SMCApi.CFG.IConfiguration}   configuration source.
-     * @param getType   {SMCApi.SourceGetType}            type of get commands from source.  default NEW.
-     * @param countLast {number}                          only for ContextSourceGetType.LAST. minimum 1. default 1.
-     * @param eventDriven   {boolean}                     if true, then source is event driven. default is false.
+     * @param {SMCApi.SourceGetType} [getType]           type of get commands from source.  default NEW.
+     * @param {number}  [countLast]                        only for ContextSourceGetType.LAST. minimum 1. default 1.
+     * @param {boolean} [eventDriven]                    if true, then source is event driven. default is false.
      * @return SMCApi.CFG.ISourceManaged
      */
-    createSourceConfiguration: function (configuration, getType, countLast, eventDriven) {
+    this.createSourceConfiguration = function (configuration, getType, countLast, eventDriven) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * create source and bind it to this execution context
@@ -1383,14 +1429,14 @@ SMCApi.CFG.ISourceListManaged = {
      * created ContextSourceType is EXECUTION_CONTEXT
      *
      * @param executionContext {SMCApi.CFG.IExecutionContext}   execution context source.
-     * @param getType   {SMCApi.SourceGetType}                  type of get commands from source.
-     * @param countLast {number}                                only for ContextSourceGetType.LAST. minimum 1. default 1.
-     * @param eventDriven   {boolean}                           if true, then source is event driven. default is false.
+     * @param  {SMCApi.SourceGetType}  [getType]                 type of get commands from source. default NEW.
+     * @param  {number}  [countLast]                              only for ContextSourceGetType.LAST. minimum 1. default 1.
+     * @param  {boolean} [eventDriven]                          if true, then source is event driven. default is false.
      * @return SMCApi.CFG.ISourceManaged
      */
-    createSourceExecutionContext: function (executionContext, getType, countLast, eventDriven) {
+    this.createSourceExecutionContext = function (executionContext, getType, countLast, eventDriven) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * create source and bind it to this execution context
@@ -1400,9 +1446,9 @@ SMCApi.CFG.ISourceListManaged = {
      * @param value {SMCApi.IValue}                       value (String, Number or byte array)
      * @return SMCApi.CFG.ISourceManaged
      */
-    createSourceValue: function (value) {
+    this.createSourceValue = function (value) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * create source and bind it to this execution context
@@ -1411,9 +1457,9 @@ SMCApi.CFG.ISourceListManaged = {
      *
      *  @return SMCApi.CFG.ISourceManaged
      */
-    createSource: function () {
+    this.createSource = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * create source and bind it to this execution context
@@ -1424,9 +1470,9 @@ SMCApi.CFG.ISourceListManaged = {
      * @param fields {string[]}                  list of field (comma separated list of paths).
      *  @return SMCApi.CFG.ISourceManaged
      */
-    createSourceObjectArray: function (value, fields) {
+    this.createSourceObjectArray = function (value, fields) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update source in list
@@ -1434,14 +1480,14 @@ SMCApi.CFG.ISourceListManaged = {
      *
      * @param id {number}                               serial number in the list of sources
      * @param configuration {SMCApi.CFG.IConfiguration} configuration source.
-     * @param getType   {SMCApi.SourceGetType}          type of get commands from source.  default NEW.
-     * @param countLast {number}                        only for ContextSourceGetType.LAST. minimum 1. default 1.
-     * @param eventDriven   {boolean}                   if true, then source is event driven. default is false.
+     * @param {SMCApi.SourceGetType} [getType]          type of get commands from source.  default NEW.
+     * @param {number}  [countLast]                      only for ContextSourceGetType.LAST. minimum 1. default 1.
+     * @param {boolean} [eventDriven]                  if true, then source is event driven. default is false.
      * @return SMCApi.CFG.ISourceManaged
      */
-    updateSourceConfiguration: function (id, configuration, getType, countLast, eventDriven) {
+    this.updateSourceConfiguration = function (id, configuration, getType, countLast, eventDriven) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update source in list
@@ -1449,14 +1495,14 @@ SMCApi.CFG.ISourceListManaged = {
      *
      * @param id {number}                                       serial number in the list of sources
      * @param executionContext {SMCApi.CFG.IExecutionContext}   execution context source.
-     * @param getType   {SMCApi.SourceGetType}                  type of get commands from source.
-     * @param countLast {number}                                only for ContextSourceGetType.LAST. minimum 1. default 1.
-     * @param eventDriven   {boolean}                           if true, then source is event driven. default is false.
+     * @param {SMCApi.SourceGetType}  [getType]                type of get commands from source.
+     * @param {number}     [countLast]                           only for ContextSourceGetType.LAST. minimum 1. default 1.
+     * @param {boolean}    [eventDriven]                       if true, then source is event driven. default is false.
      * @return SMCApi.CFG.ISourceManaged
      */
-    updateSourceExecutionContext: function (id, executionContext, getType, countLast, eventDriven) {
+    this.updateSourceExecutionContext = function (id, executionContext, getType, countLast, eventDriven) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update source in list
@@ -1466,9 +1512,9 @@ SMCApi.CFG.ISourceListManaged = {
      * @param value {SMCApi.IValue}                    value (String, Number or byte array)
      * @return SMCApi.CFG.ISourceManaged
      */
-    updateSourceValue: function (id, value) {
+    this.updateSourceValue = function (id, value) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * Update source in list
@@ -1479,9 +1525,9 @@ SMCApi.CFG.ISourceListManaged = {
      * @param fields {string[]}                         list of field (comma separated list of paths).
      * @return SMCApi.CFG.ISourceManaged
      */
-    updateSourceObjectArray: function (id, value, fields) {
+    this.updateSourceObjectArray = function (id, value, fields) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * remove source from list
@@ -1489,9 +1535,9 @@ SMCApi.CFG.ISourceListManaged = {
      * @param id    {number}                              serial number in the list of sources
      * @return void
      */
-    removeSource: function (id) {
+    this.removeSource = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get managed source list
@@ -1499,10 +1545,9 @@ SMCApi.CFG.ISourceListManaged = {
      * @param id {number}             serial number in the list of sources
      * @return SMCApi.CFG.ISourceListManaged or null
      */
-    getSourceListManaged: function (id) {
+    this.getSourceListManaged = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    }
-    ,
+    };
 
     /**
      * get managed source
@@ -1510,69 +1555,69 @@ SMCApi.CFG.ISourceListManaged = {
      * @param id {number}               serial number in the list of sources
      * @return SMCApi.CFG.ISourceManaged or null
      */
-    getSourceManaged: function (id) {
+    this.getSourceManaged = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
 
 };
-SMCApi.CFG.ISourceListManaged.prototype = SMCApi.CFG.ISourceList;
+SMCApi.CFG.ISourceListManaged.prototype = Object.create(SMCApi.CFG.ISourceList);
 
 /**
  * tool for work with unmodifiable files
  */
-SMCApi.FileTool = {
+SMCApi.FileTool = function () {
 
     /**
      * get name
      *
      *  @return string
      */
-    getName: function () {
+    this.getName = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * is file exist
      *
      *  @return boolean
      */
-    exists: function () {
+    this.exists = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * is directory
      *
      *  @return boolean
      */
-    isDirectory: function () {
+    this.isDirectory = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get files in folder
      *
-     *  @return Array[SMCApi.FileTool]
+     *  @return SMCApi.FileTool[]
      */
-    getChildrens: function () {
+    this.getChildrens = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * reed all file
      *
      *  @return byte[]
      */
-    getBytes: function () {
+    this.getBytes = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * file size
      *
      *  @return number
      */
-    length: function () {
+    length = function () {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
@@ -1581,7 +1626,7 @@ SMCApi.FileTool = {
 /**
  * Main module interface
  */
-SMCApi.Module = {
+SMCApi.Module = function () {
 
     /**
      * call once per process on start
@@ -1589,9 +1634,9 @@ SMCApi.Module = {
      *  @param configurationTool    {SMCApi.ConfigurationTool}
      *  @return void
      */
-    start: function (configurationTool) {
+    this.start = function (configurationTool) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * main method. call every time when need execute
@@ -1600,9 +1645,9 @@ SMCApi.Module = {
      *  @param executionContextTool {SMCApi.ExecutionContextTool}
      *  @return void
      */
-    process: function (configurationTool, executionContextTool) {
+    this.process = function (configurationTool, executionContextTool) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * call then need update
@@ -1610,9 +1655,9 @@ SMCApi.Module = {
      *  @param configurationTool    {SMCApi.ConfigurationTool}
      *  @return void
      */
-    update: function (configurationTool) {
+    this.update = function (configurationTool) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * call once per process on stop
@@ -1620,7 +1665,7 @@ SMCApi.Module = {
      *  @param configurationTool    {SMCApi.ConfigurationTool}
      *  @return void
      */
-    stop: function (configurationTool) {
+    stop = function (configurationTool) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
@@ -1631,7 +1676,9 @@ SMCApi.Module = {
  *
  * @parent {SMCApi.CFG.IConfiguration}
  */
-SMCApi.ConfigurationTool = {
+SMCApi.ConfigurationTool = function () {
+
+    SMCApi.CFG.IConfiguration.call(this);
 
     /**
      * change variable
@@ -1640,9 +1687,9 @@ SMCApi.ConfigurationTool = {
      *  @param value    {object}                           value object (string, number, bytes)
      *  @return void
      */
-    setVariable: function (key, value) {
+    this.setVariable = function (key, value) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * check is variable has changed from last execution or last check
@@ -1651,9 +1698,9 @@ SMCApi.ConfigurationTool = {
      *  @param key  {string}                             variable name
      *  @return boolean
      */
-    isVariableChanged: function (key) {
+    this.isVariableChanged = function (key) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * remove variable
@@ -1661,9 +1708,9 @@ SMCApi.ConfigurationTool = {
      *  @param key  {string}                             variable name
      *  @return void
      */
-    removeVariable: function (key) {
+    this.removeVariable = function (key) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get module folder
@@ -1671,9 +1718,9 @@ SMCApi.ConfigurationTool = {
      *
      *  @return SMCApi.FileTool
      */
-    getHomeFolder: function () {
+    this.getHomeFolder = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get full path to work directory
@@ -1681,90 +1728,92 @@ SMCApi.ConfigurationTool = {
      *
      *  @return string
      */
-    getWorkDirectory: function () {
+    this.getWorkDirectory = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count configuration execution contexts
      *
      * @return int
      */
-    countExecutionContexts: function () {
+    this.countExecutionContexts = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get execution context
      *
      * @param id    {number}                              serial number in the list of Execution Contexts
-     * @return {SMCApi.CFG.IExecutionContext|null}
+     * @return {SMCApi.CFG.IExecutionContext} or null
      */
-    getExecutionContext: function (id) {
+    this.getExecutionContext = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get container
      *
-     *  @return {SMCApi.CFG.IContainerManaged|null}
+     *  @return {SMCApi.CFG.IContainerManaged} or null
      */
-    getContainer: function () {
+    this.getContainer = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * logger trace
      *
      * @param text {string}           text
      */
-    loggerTrace: function (text) {
+    this.loggerTrace = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * logger debug
      *
      * @param text {string}           text
      */
-    loggerDebug: function (text) {
+    this.loggerDebug = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * logger info
      *
      * @param text {string}           text
      */
-    loggerInfo: function (text) {
+    this.loggerInfo = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * logger warn
      *
      * @param text {string}           text
      */
-    loggerWarn: function (text) {
+    this.loggerWarn = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * logger error
      *
      * @param text {string}           text
      */
-    loggerError: function (text) {
+    this.loggerError = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
 };
-SMCApi.ConfigurationTool.prototype = SMCApi.CFG.IConfiguration.prototype;
+SMCApi.ConfigurationTool.prototype = Object.create(SMCApi.CFG.IConfiguration.prototype);
 
 /**
  * main execution context tool
  */
-SMCApi.ExecutionContextTool = {
+SMCApi.ExecutionContextTool = function () {
+
+    SMCApi.CFG.IExecutionContext.call(this);
 
     /**
      * emit message
@@ -1772,9 +1821,9 @@ SMCApi.ExecutionContextTool = {
      *  @param value    {Object}                          object (string, number, bytes)
      *  @return void
      */
-    addMessage: function (value) {
+    this.addMessage = function (value) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * emit error message
@@ -1782,9 +1831,9 @@ SMCApi.ExecutionContextTool = {
      *  @param value    {Object}                          object (string, number, bytes)
      *  @return void
      */
-    addError: function (value) {
+    this.addError = function (value) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * emit log message
@@ -1792,9 +1841,9 @@ SMCApi.ExecutionContextTool = {
      *  @param value    {string}
      *  @return void
      */
-    addLog: function (value) {
+    this.addLog = function (value) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get count commands in source
@@ -1802,9 +1851,9 @@ SMCApi.ExecutionContextTool = {
      *  @param sourceId {number}                          serial number in the list of Sources
      *  @return number
      */
-    countCommands: function (sourceId) {
+    this.countCommands = function (sourceId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get count commands (all) for managed execution context
@@ -1812,35 +1861,35 @@ SMCApi.ExecutionContextTool = {
      * @param executionContext  {SMCApi.CFG.IExecutionContextManaged}     managed execution context
      * @return count
      */
-    countCommandsFromExecutionContext: function (executionContext) {
+    this.countCommandsFromExecutionContext = function (executionContext) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get Actions from source (only DATA messages)
      * Returns a view of the portion of this list between the specified fromIndex, inclusive, and toIndex, exclusive.
      *
-     *  @param sourceId     {number}                      serial number in the list of Sources
-     *  @param fromIndex    {number}                      start serial number in the list of commands in source (exclusive). if -1 then get all. default is -1.
-     *  @param toIndex      {number}                      end serial number in the list of commands in source (inclusive). if -1 then get all. default is -1.
+     *  @param {number} sourceId                      serial number in the list of Sources
+     *  @param {number} [fromIndex]                      start serial number in the list of commands in source (exclusive). if -1 then get all. default is -1.
+     *  @param {number} [toIndex]                     end serial number in the list of commands in source (inclusive). if -1 then get all. default is -1.
      *  @return SMCApi.IAction[]
      */
-    getMessages: function (sourceId, fromIndex, toIndex) {
+    this.getMessages = function (sourceId, fromIndex, toIndex) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get Commands from source
      * Returns a view of the portion of this list between the specified fromIndex, inclusive, and toIndex, exclusive.
      *
-     *  @param sourceId     {number}                      serial number in the list of Sources
-     *  @param fromIndex    {number}                      start serial number in the list of commands in source (exclusive). if -1 then get all. default is -1.
-     *  @param toIndex      {number}                      end serial number in the list of commands in source (inclusive). if -1 then get all. default is -1.
+     *  @param {number}     sourceId                 serial number in the list of Sources
+     *  @param {number}     [fromIndex]                 start serial number in the list of commands in source (exclusive). if -1 then get all. default is -1.
+     *  @param {number}     [toIndex]                 end serial number in the list of commands in source (inclusive). if -1 then get all. default is -1.
      *  @return SMCApi.ICommand[]
      */
-    getCommands: function (sourceId, fromIndex, toIndex) {
+    this.getCommands = function (sourceId, fromIndex, toIndex) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get Commands from managed execution context
@@ -1851,9 +1900,9 @@ SMCApi.ExecutionContextTool = {
      * @param toIndex   {number}                          end serial number in the list of commands
      * @return {SMCApi.ICommand[]}
      */
-    getCommandsFromExecutionContext: function (executionContext, fromIndex, toIndex) {
+    this.getCommandsFromExecutionContext = function (executionContext, fromIndex, toIndex) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * is Process Actions has errors
@@ -1861,27 +1910,27 @@ SMCApi.ExecutionContextTool = {
      *  @param action   {SMCApi.IAction}
      *  @return boolean
      */
-    isError: function (action) {
+    this.isError = function (action) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get tool for work with managed configurations
      *
      *  @return SMCApi.ConfigurationControlTool
      */
-    getConfigurationControlTool: function () {
+    this.getConfigurationControlTool = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get tool for throw new command to managed execution contexts and get result
      *
      *  @return SMCApi.FlowControlTool
      */
-    getFlowControlTool: function () {
+    this.getFlowControlTool = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * check is need stop process work immediately
@@ -1889,45 +1938,45 @@ SMCApi.ExecutionContextTool = {
      *
      *  @return boolean
      */
-    isNeedStop: function () {
+    this.isNeedStop = function () {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
 };
-SMCApi.ExecutionContextTool.prototype = SMCApi.CFG.IExecutionContext.prototype;
+SMCApi.ExecutionContextTool.prototype = Object.create(SMCApi.CFG.IExecutionContext.prototype);
 
 /**
  * Tool for work with managed configurations
  */
-SMCApi.ConfigurationControlTool = {
+SMCApi.ConfigurationControlTool = function () {
 
     /**
      * list of all installed modules
      *
      * @return SMCApi.CFG.IModule[]
      */
-    getModules: function () {
+    this.getModules = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * count managed configurations
      *
      *  @return number
      */
-    countManagedConfigurations: function () {
+    this.countManagedConfigurations = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get managed configuration
      *
      * @param id    {number}                              serial number in the list of Managed configurations
-     * @return {SMCApi.CFG.IConfigurationManaged|null}
+     * @return {SMCApi.CFG.IConfigurationManaged} or null
      */
-    getManagedConfiguration: function (id) {
+    this.getManagedConfiguration = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * create configuration and add it in list of managed configurations
@@ -1938,9 +1987,9 @@ SMCApi.ConfigurationControlTool = {
      * @param name  {string}                              unique name for configuration
      * @return SMCApi.CFG.IConfigurationManaged
      */
-    createConfiguration: function (id, container, module, name) {
+    this.createConfiguration = function (id, container, module, name) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * remove managed configuration
@@ -1948,7 +1997,7 @@ SMCApi.ConfigurationControlTool = {
      * @param id    {number}                              serial number in the list of Managed configurations
      * @return void
      */
-    removeManagedConfiguration: function (id) {
+    this.removeManagedConfiguration = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
@@ -1957,16 +2006,16 @@ SMCApi.ConfigurationControlTool = {
 /**
  * Tool for throw new command to managed execution contexts and get result
  */
-SMCApi.FlowControlTool = {
+SMCApi.FlowControlTool = function () {
 
     /**
      * count managed execution contexts
      *
      *  @return number
      */
-    countManagedExecutionContexts: function () {
+    this.countManagedExecutionContexts = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * throw new command to managed execution context
@@ -1978,9 +2027,9 @@ SMCApi.FlowControlTool = {
      *  @param values     {Object[]}                        list of values for create dummy messages from this process, or null
      *  @return void
      */
-    executeNow: function (type, managedId, values) {
+    this.executeNow = function (type, managedId, values) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * throw new command to managed execution context
@@ -1990,13 +2039,13 @@ SMCApi.FlowControlTool = {
      *  @param type          {SMCApi.CommandType}       type of command
      *  @param managedIds    {number[]}                 list of serial numbers in the list of Managed execution contexts
      *  @param values        {Object[]}            list of values for create dummy messages from this process, or null
-     *  @param waitingTacts  {number}                   if it is necessary that the new thread first wait for the specified time (in tacts). if 0 then using data from current thread. default is 0.
-     *  @param maxWorkInterval {number}                 define max work interval of new thread (in tacts). if -1 then no limit. default is -1.
+     *  @param {number}  [waitingTacts]                 if it is necessary that the new thread first wait for the specified time (in tacts). if 0 then using data from current thread. default is 0.
+     *  @param {number}  [maxWorkInterval]               define max work interval of new thread (in tacts). if -1 then no limit. default is -1.
      *  @return {number}  id of thread
      */
-    executeParallel: function (type, managedIds, values, waitingTacts, maxWorkInterval) {
+    this.executeParallel = function (type, managedIds, values, waitingTacts, maxWorkInterval) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * check is thread alive
@@ -2004,33 +2053,33 @@ SMCApi.FlowControlTool = {
      *  @param threadId  {number}                       id thread
      *  @return boolean
      */
-    isThreadActive: function (threadId) {
+    this.isThreadActive = function (threadId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get data from managed execution context
      * who receive commands from this process
      *
-     *  @param threadId  {number}                       id thread. if 0 then using data from current thread. default is 0.
-     *  @param managedId {number}                       serial number in the list of Managed execution contexts. default is 0.
+     *  @param {number} [threadId]                      id thread. if 0 then using data from current thread. default is 0.
+     *  @param {number} [managedId]                      serial number in the list of Managed execution contexts. default is 0.
      *  @return {SMCApi.IAction[]} only DATA messages
      */
-    getMessagesFromExecuted: function (threadId, managedId) {
+    this.getMessagesFromExecuted = function (threadId, managedId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get data from managed execution context
      * who receive commands from this process
      *
-     *  @param threadId  {number}                        id thread. if 0 then using data from current thread. default is 0.
-     *  @param managedId {number}                       serial number in the list of Managed execution contexts. default is 0.
+     *  @param {number}   [threadId]                     id thread. if 0 then using data from current thread. default is 0.
+     *  @param {number}   [managedId]                    serial number in the list of Managed execution contexts. default is 0.
      *  @return SMCApi.ICommand[]
      */
-    getCommandsFromExecuted: function (threadId, managedId) {
+    this.getCommandsFromExecuted = function (threadId, managedId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * after executeParallel and work with him, need to release thread
@@ -2038,9 +2087,9 @@ SMCApi.FlowControlTool = {
      *  @param threadId   {number}                      id thread
      *  @return void
      */
-    releaseThread: function (threadId) {
+    this.releaseThread = function (threadId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * after executeParallel and work with him, need to release thread
@@ -2048,17 +2097,17 @@ SMCApi.FlowControlTool = {
      *
      * @param threadId  {number}          id thread
      */
-    releaseThreadCache: function (threadId) {
+    this.releaseThreadCache = function (threadId) {
         throw new SMCApi.ModuleException('function not implemented');
-    },
+    };
 
     /**
      * get managed execution context
      *
      * @param id    {number}                                        serial number in the list of Managed execution contexts
-     * @return {SMCApi.CFG.IExecutionContext|null}
+     * @return {SMCApi.CFG.IExecutionContext} or null
      */
-    getManagedExecutionContext: function (id) {
+    this.getManagedExecutionContext = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
