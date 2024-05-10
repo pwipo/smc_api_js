@@ -1670,7 +1670,7 @@ SMCApi.Module = function () {
      *  @param configurationTool    {SMCApi.ConfigurationTool}
      *  @return void
      */
-    stop = function (configurationTool) {
+    this.stop = function (configurationTool) {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
