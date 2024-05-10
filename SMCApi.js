@@ -233,14 +233,14 @@ SMCApi.ObjectType = {
  */
 SMCApi.ObjectField = function (name, value, type) {
     const callSetValue = typeof value !== undefined && value != null && (typeof type === undefined || type == null);
-    this.name = name;
+    this.namev = name;
     this.value = typeof value !== undefined ? value : null;
     /** @type {SMCApi.ObjectType} */
     this.type = type;
     const that = this;
 
     if (callSetValue)
-        this.setValue(value)
+        this.setValue(value);
 
     /**
      *
@@ -293,27 +293,31 @@ SMCApi.ObjectField = function (name, value, type) {
                 }
             }
         }
-    }
+    };
 
     this.getName = function () {
-        return this.name
-    }
+        return this.namev;
+    };
+
     this.getType = function () {
-        return this.type
-    }
+        return this.type;
+    };
+
     /**
      *
      * @return {number|string|Array|boolean|SMCApi.ObjectArray|SMCApi.ObjectElement}
      */
     this.getValue = function () {
-        return this.value
-    }
+        return this.value;
+    };
+
     this.isSimple = function () {
         return SMCApi.ObjectType.OBJECT_ARRAY !== this.type && SMCApi.ObjectType.OBJECT_ELEMENT !== this.type;
-    }
+    };
+
     SMCApi.ObjectField.prototype.toString = function () {
         return `${that.type} ${that.name}=${that.value}`;
-    }
+    };
 }
 
 /**
@@ -1586,7 +1590,7 @@ SMCApi.FileTool = function () {
      *
      *  @return boolean
      */
-    this.exists = function () {
+    this.isExists = function () {
         throw new SMCApi.ModuleException('function not implemented');
     };
 
@@ -1622,9 +1626,9 @@ SMCApi.FileTool = function () {
      *
      *  @return number
      */
-    length = function () {
+    this.length = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
 
 };
 
