@@ -12,14 +12,14 @@ SMCApi.ModuleException = function (message) {
 SMCApi.ModuleException.prototype = Object.create(Error.prototype);
 
 SMCApi.ActionType = {
-    STAR: 0,
+    START: 0,
     EXECUTE: 1,
     UPDATE: 2,
     STOP: 3
 };
 
 SMCApi.CommandType = {
-    STAR: 0,
+    START: 0,
     EXECUTE: 1,
     UPDATE: 2,
     STOP: 3
@@ -232,7 +232,7 @@ SMCApi.ObjectType = {
  * @constructor
  */
 SMCApi.ObjectField = function (name, value, type) {
-    const callSetValue = typeof value !== undefined && value !== null && (typeof type === undefined || type === null);
+    const callSetValue = typeof value !== undefined && value != null && (typeof type === undefined || type == null);
     this.name = name;
     this.value = typeof value !== undefined ? value : null;
     /** @type {SMCApi.ObjectType} */
@@ -250,9 +250,9 @@ SMCApi.ObjectField = function (name, value, type) {
     this.setValue = function (value, type) {
         this.value = value
 
-        if (typeof type === undefined || type === null) {
+        if (typeof type === undefined || type == null) {
             let valueType = undefined;
-            if (typeof value !== undefined && value !== null) {
+            if (typeof value !== undefined && value != null) {
                 if (value instanceof SMCApi.ObjectArray) {
                     valueType = SMCApi.ObjectType.OBJECT_ARRAY;
                 } else if (value instanceof SMCApi.ObjectElement) {
@@ -278,12 +278,12 @@ SMCApi.ObjectField = function (name, value, type) {
                     this.value = value.doubleValue ? value.doubleValue() : 0
                 }
             }
-            if (valueType === undefined)
+            if (valueType == null)
                 valueType = SMCApi.ObjectType.STRING;
             this.type = valueType;
         } else {
             this.type = type;
-            if (typeof value !== undefined && value !== null) {
+            if (typeof value !== undefined && value != null) {
                 if (value instanceof SMCApi.ObjectField) {
                     this.type = value.getType()
                     this.value = value.getValue()
@@ -580,7 +580,7 @@ SMCApi.CFG.IContainerManaged = function () {
      * get child configuration
      *
      *  @param id   number                              serial number in the list of child configurations
-     *  @return SMCApi.CFG.IConfiguration or null
+     *  @return {SMCApi.CFG.IConfiguration} or null
      */
     this.getConfiguration = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -599,7 +599,7 @@ SMCApi.CFG.IContainerManaged = function () {
      * get child managed configuration
      *
      *  @param id   {number}                              serial number in the list of child managed configurations
-     *  @return SMCApi.CFG.IConfigurationManaged or null
+     *  @return {SMCApi.CFG.IConfigurationManaged} or null
      */
     this.getManagedConfiguration = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -618,7 +618,7 @@ SMCApi.CFG.IContainerManaged = function () {
      * get child container
      *
      *  @param id   {number}                              serial number in the list of child containers
-     *  @return SMCApi.CFG.IConfiguration or null
+     *  @return {SMCApi.CFG.IConfiguration} or null
      */
     this.getContainer = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -820,6 +820,7 @@ SMCApi.CFG.IConfigurationManaged = function () {
      * change thread buffer size
      *
      * @param threadBufferSize {number} 1 is minimum
+     * @return void
      */
     this.setThreadBufferSize = function (threadBufferSize) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1066,6 +1067,7 @@ SMCApi.CFG.IExecutionContextManaged = function () {
      *
      * @param id    {number}                                    serial number in the list of Execution Contexts
      * @param executionContext {SMCApi.CFG.IExecutionContext}
+     * @return void
      */
     this.updateExecutionContext = function (id, executionContext) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1117,6 +1119,7 @@ SMCApi.CFG.IExecutionContextManaged = function () {
      *
      * @param id    {number}            serial number in the list of Managed configurations
      * @param configuration {SMCApi.CFG.IConfiguration}
+     * @return void
      */
     this.updateManagedConfiguration = function (id, configuration) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1136,6 +1139,7 @@ SMCApi.CFG.IExecutionContextManaged = function () {
      * change type
      *
      * @param {string}      type type name or empty for default/any type (if exist)
+     * @return void
      */
     this.setType = function (type) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1217,6 +1221,7 @@ SMCApi.CFG.ISource = function () {
      * STATIC_VALUE: IValue (String, Number or byte array)
      * MULTIPART: null
      * CALLER_RELATIVE_NAME: string (caller level cfg name)
+     * @return any
      */
     this.getParam = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1543,7 +1548,7 @@ SMCApi.CFG.ISourceListManaged = function () {
      * get managed source list
      *
      * @param id {number}             serial number in the list of sources
-     * @return SMCApi.CFG.ISourceListManaged or null
+     * @return {SMCApi.CFG.ISourceListManaged} or null
      */
     this.getSourceListManaged = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1553,7 +1558,7 @@ SMCApi.CFG.ISourceListManaged = function () {
      * get managed source
      *
      * @param id {number}               serial number in the list of sources
-     * @return SMCApi.CFG.ISourceManaged or null
+     * @return {SMCApi.CFG.ISourceManaged} or null
      */
     this.getSourceManaged = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1606,7 +1611,7 @@ SMCApi.FileTool = function () {
     /**
      * reed all file
      *
-     *  @return byte[]
+     *  @return number[]
      */
     this.getBytes = function () {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1764,6 +1769,7 @@ SMCApi.ConfigurationTool = function () {
      * logger trace
      *
      * @param text {string}           text
+     * @return void
      */
     this.loggerTrace = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1773,6 +1779,7 @@ SMCApi.ConfigurationTool = function () {
      * logger debug
      *
      * @param text {string}           text
+     * @return void
      */
     this.loggerDebug = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1782,6 +1789,7 @@ SMCApi.ConfigurationTool = function () {
      * logger info
      *
      * @param text {string}           text
+     * @return void
      */
     this.loggerInfo = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1791,6 +1799,7 @@ SMCApi.ConfigurationTool = function () {
      * logger warn
      *
      * @param text {string}           text
+     * @return void
      */
     this.loggerWarn = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1800,6 +1809,7 @@ SMCApi.ConfigurationTool = function () {
      * logger error
      *
      * @param text {string}           text
+     * @return void
      */
     this.loggerError = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
@@ -1859,7 +1869,7 @@ SMCApi.ExecutionContextTool = function () {
      * get count commands (all) for managed execution context
      *
      * @param executionContext  {SMCApi.CFG.IExecutionContextManaged}     managed execution context
-     * @return count
+     * @return number
      */
     this.countCommandsFromExecutionContext = function (executionContext) {
         throw new SMCApi.ModuleException('function not implemented');
