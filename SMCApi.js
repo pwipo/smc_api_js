@@ -1,3 +1,8 @@
+/**
+ * created by Nikolay V. Ulyanov (ulianownv@mail.ru)
+ * http://www.smcsystem.ru
+ */
+
 SMCApi = {};
 
 /**
