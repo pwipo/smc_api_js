@@ -275,7 +275,7 @@ SMCApi.ObjectField = function (name, value, type) {
                     //     valueType = SMCApi.ObjectType.DOUBLE;
                     // } else if (Number.isInteger(value)) {
                     //     valueType = SMCApi.ObjectType.LONG;
-                } else if (value instanceof Number) {
+                } else if (value instanceof Number || typeof (value) === "number") {
                     const intValue = Math.round(value);
                     valueType = value === intValue ? SMCApi.ValueType.LONG : SMCApi.ValueType.DOUBLE;
                 } else {
@@ -423,7 +423,7 @@ SMCApi.ObjectArray = function (typev, objects) {
             if (!(value instanceof SMCApi.ObjectElement))
                 throw new SMCApi.ModuleException('wrong obj type');
         } else if (this.type === SMCApi.ObjectType.VALUE_ANY) {
-            if (Object.prototype.toString.call(value) !== "[object String]" && !Array.isArray(value) && !(value instanceof Number) && (value !== false && value !== true))
+            if (Object.prototype.toString.call(value) !== "[object String]" && !Array.isArray(value) && !(value instanceof Number) && typeof (value) !== "number" && (value !== false && value !== true))
                 throw new SMCApi.ModuleException('wrong obj type');
         } else if (this.type === SMCApi.ObjectType.STRING) {
             if (Object.prototype.toString.call(value) !== "[object String]")
