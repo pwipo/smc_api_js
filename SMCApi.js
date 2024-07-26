@@ -336,7 +336,7 @@ SMCApi.ObjectField = function (name, value, type) {
     };
 
     SMCApi.ObjectField.prototype.toString = function () {
-        return `${that.type} ${that.namev}=${that.value}`;
+        return `${this.type} ${this.namev}=${this.value}`;
     };
 }
 
@@ -390,7 +390,7 @@ SMCApi.ObjectElement = function (fields) {
         return !this.fields.some(v => !v.isSimple());
     }
     SMCApi.ObjectElement.prototype.toString = function () {
-        return `{count=${that.fields.length}, fields=[${that.fields}]}`;
+        return `{count=${this.fields.length}, fields=[${this.fields}]}`;
     }
 }
 
@@ -490,7 +490,7 @@ SMCApi.ObjectArray = function (typev, objects) {
         return SMCApi.ObjectType.OBJECT_ARRAY !== this.type && SMCApi.ObjectType.OBJECT_ELEMENT !== this.type;
     }
     SMCApi.ObjectArray.prototype.toString = function () {
-        return `[size=${that.objects.length}, objects=[${that.objects}], type=${that.type}]`;
+        return `[size=${this.objects.length}, objects=[${this.objects}], type=${this.type}]`;
     }
 
     if (typeof objects !== undefined && Array.isArray(objects)) {
