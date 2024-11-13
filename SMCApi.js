@@ -1880,7 +1880,17 @@ SMCApi.ConfigurationTool = function () {
      */
     this.loggerError = function (text) {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
+
+    /**
+     * get info by key
+     *
+     * @param key {string}           key name
+     * @return {SMCApi.IValue} or null
+     */
+    this.getInfo = function (key) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
 
 };
 SMCApi.ConfigurationTool.prototype = Object.create(SMCApi.CFG.IConfiguration.prototype);
