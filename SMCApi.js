@@ -747,44 +747,6 @@ SMCApi.CFG.IConfiguration = function () {
     };
 
     /**
-     * get all settings
-     *
-     *  @return {Map<string, SMCApi.IValue>}
-     */
-    this.getAllSettings = function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    };
-
-    /**
-     * get setting value
-     *
-     *  @param key  {string}                              setting name
-     *  @return {SMCApi.IValue} or null
-     */
-    this.getSetting = function (key) {
-        throw new SMCApi.ModuleException('function not implemented');
-    };
-
-    /**
-     * get all variables
-     *
-     *  @return Map[string, SMCApi.IValue]
-     */
-    this.getAllVariables = function () {
-        throw new SMCApi.ModuleException('function not implemented');
-    };
-
-    /**
-     * get variable value
-     *
-     *  @param key  {string}                              variable name
-     *  @return {SMCApi.IValue} or null
-     */
-    this.getVariable = function (key) {
-        throw new SMCApi.ModuleException('function not implemented');
-    };
-
-    /**
      * get buffer size
      *
      *  @return number
@@ -838,6 +800,44 @@ SMCApi.CFG.IConfigurationManaged = function () {
      *  @return void
      */
     this.setName = function (name) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get all settings
+     *
+     *  @return {Map<string, SMCApi.IValue>}
+     */
+    this.getAllSettings = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get setting value
+     *
+     *  @param key  {string}                              setting name
+     *  @return {SMCApi.IValue} or null
+     */
+    this.getSetting = function (key) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get all variables
+     *
+     *  @return Map[string, SMCApi.IValue]
+     */
+    this.getAllVariables = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get variable value
+     *
+     *  @param key  {string}                              variable name
+     *  @return {SMCApi.IValue} or null
+     */
+    this.getVariable = function (key) {
         throw new SMCApi.ModuleException('function not implemented');
     };
 
@@ -1751,6 +1751,44 @@ SMCApi.Module = function () {
 SMCApi.ConfigurationTool = function () {
 
     SMCApi.CFG.IConfiguration.call(this);
+
+    /**
+     * get all settings
+     *
+     *  @return {Map<string, SMCApi.IValue>}
+     */
+    this.getAllSettings = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get setting value
+     *
+     *  @param key  {string}                              setting name
+     *  @return {SMCApi.IValue} or null
+     */
+    this.getSetting = function (key) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get all variables
+     *
+     *  @return Map[string, SMCApi.IValue]
+     */
+    this.getAllVariables = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get variable value
+     *
+     *  @param key  {string}                              variable name
+     *  @return {SMCApi.IValue} or null
+     */
+    this.getVariable = function (key) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
 
     /**
      * change variable
