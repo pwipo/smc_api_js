@@ -711,6 +711,28 @@ SMCApi.CFG.IContainerManaged = function () {
         throw new SMCApi.ModuleException('function not implemented');
     }
 
+    /**
+     * get child configuration as managed
+     * similar getConfiguration
+     *
+     *  @param id   number                              serial number in the list of child configurations
+     *  @return {SMCApi.CFG.IConfigurationManaged} or null
+     */
+    this.getConfigurationManaged = function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get child container as managed
+     * similar getContainer
+     *
+     *  @param id   {number}                              serial number in the list of child containers
+     *  @return {SMCApi.CFG.IConfigurationManaged} or null
+     */
+    this.getContainerManaged = function (id) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
 };
 SMCApi.CFG.IContainerManaged.prototype = Object.create(SMCApi.CFG.IContainer);
 
