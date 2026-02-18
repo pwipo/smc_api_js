@@ -598,6 +598,17 @@ SMCApi.CFG.IModule = function () {
         throw new SMCApi.ModuleException('function not implemented');
     };
 
+    /**
+     * get module info
+     * on english
+     * object contain fields: description, settings, types
+     *
+     * @return {SMCApi.ObjectElement}
+     */
+    this.getInfo = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
 };
 
 /**
@@ -733,6 +744,44 @@ SMCApi.CFG.IContainerManaged = function () {
         throw new SMCApi.ModuleException('function not implemented');
     };
 
+    /**
+     * get all shapes in container
+     *
+     * @return {SMCApi.ObjectArray}
+     */
+    this.getShapes = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get decoration shapes in container
+     * not include cfgs, apps and containers
+     *
+     * @return {SMCApi.ObjectArray}
+     */
+    this.getDecorationShapes = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get all cfgs as text on smcl in current container
+     *
+     * @return String text
+     */
+    this.getSmcl = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * save and execute text on smcl in current container
+     *
+     * @param text String on smcl
+     * @return bool true if success
+     */
+    this.saveSmcl = function (text) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
 };
 SMCApi.CFG.IContainerManaged.prototype = Object.create(SMCApi.CFG.IContainer);
 
@@ -802,7 +851,25 @@ SMCApi.CFG.IConfiguration = function () {
      */
     this.isActive = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
+
+    /**
+     * get container
+     *
+     * @return {SMCApi.CFG.IContainer}
+     */
+    this.getContainerSimple = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get own shape
+     *
+     * @return {SMCApi.ObjectElement}
+     */
+    this.getShape = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
 
 };
 
@@ -986,7 +1053,17 @@ SMCApi.CFG.IConfigurationManaged = function () {
      */
     this.getContainer = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
+
+    /**
+     * get full path to work directory
+     * only if module allow this
+     *
+     * @return full path to directory or NULL
+     */
+    this.getWorkDirectory = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
 
 };
 SMCApi.CFG.IConfigurationManaged.prototype = Object.create(SMCApi.CFG.IConfiguration);
@@ -2087,7 +2164,25 @@ SMCApi.ExecutionContextTool = function () {
      */
     this.isNeedStop = function () {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
+
+    /**
+     * get current thread id
+     *
+     * @return Long
+     */
+    this.getThreadId = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get current user nickname
+     *
+     * @return String or null
+     */
+    this.getNickName = function () {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
 
 };
 SMCApi.ExecutionContextTool.prototype = Object.create(SMCApi.CFG.IExecutionContext.prototype);
@@ -2256,6 +2351,59 @@ SMCApi.FlowControlTool = function () {
      */
     this.getManagedExecutionContext = function (id) {
         throw new SMCApi.ModuleException('function not implemented');
-    }
+    };
+
+    /**
+     * throw new command to managed execution context
+     * command execute in this thread
+     * function will wait for the command to execute
+     *
+     * @param type       {SMCApi.CommandType}              type of command
+     * @param managedEC  {SMCApi.IExecutionContextManaged} managed execution contexts
+     * @param values     {Object[]}                        list of values for create dummy messages from this process, or null
+     */
+    this.executeNowDirect = function (type, managedEC, values) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * throw new command to managed execution context
+     * command execute in new thread
+     * function return control immediately
+     *
+     * @param type            {SMCApi.CommandType}                  type of command
+     * @param managedECs      {SMCApi.IExecutionContextManaged[]}   list of Managed execution contexts
+     * @param values          {Object[]}                            list of values for create dummy messages from this process, or null
+     * @param waitingTacts    {number}                              if it is necessary that the new thread first wait for the specified time (in tacts)
+     * @param maxWorkInterval {number}                              define max work interval of new thread (in tacts)
+     * @return return id of thread
+     */
+    this.executeParallelDirect = function (type, managedECs, values, waitingTacts, maxWorkInterval) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get data from managed execution context
+     * who receive commands from this process
+     *
+     *  @param {SMCApi.IExecutionContextManaged} [managedEC]    managed execution context.
+     *  @param {number} [threadId]                              id thread. if 0 then using data from current thread. default is 0.
+     *  @return {SMCApi.IAction[]} only DATA messages
+     */
+    this.getMessagesFromExecutedDirect = function (managedEC, threadId) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
+
+    /**
+     * get data from managed execution context
+     * who receive commands from this process
+     *
+     *  @param {SMCApi.IExecutionContextManaged}   [managedEC]  managed execution context.
+     *  @param {number}   [threadId]                            id thread. if 0 then using data from current thread. default is 0.
+     *  @return SMCApi.ICommand[]
+     */
+    this.getCommandsFromExecutedDirect = function (managedEC, threadId) {
+        throw new SMCApi.ModuleException('function not implemented');
+    };
 
 };
