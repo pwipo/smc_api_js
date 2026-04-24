@@ -428,9 +428,6 @@ SMCApi.ObjectArray = function (typev, objects) {
     typev = typev || SMCApi.ObjectType.OBJECT_ELEMENT;
     this.type = typev;
     this.objects = [];
-    const that = this;
-    if (objects && Array.isArray(objects))
-        objects.forEach(obj => that.objects.push(obj));
 
     /**
      *
