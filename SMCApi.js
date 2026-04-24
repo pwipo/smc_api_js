@@ -430,7 +430,7 @@ SMCApi.ObjectArray = function (typev, objects) {
     this.objects = [];
     const that = this;
     if (objects && Array.isArray(objects))
-        objects.forEach(obj => that.add(obj));
+        objects.forEach(obj => that.objects.push(obj));
 
     /**
      *
